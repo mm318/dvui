@@ -5,38 +5,16 @@
     .minimum_zig_version = "0.15.1",
     .paths = .{""},
     .dependencies = .{
-        .sdl = .{
-            .url = "git+https://github.com/allyourcodebase/SDL#d29847ebcb6da34dec466a06163431982500a092",
-            .hash = "SDL-2.32.6-JToi38aTEgECY2mV9iUG7dNouCbarfJ1mkzjjm53gC80",
-            .lazy = true,
-        },
         .sdl3 = .{
-            .url = "git+https://github.com/david-vanderson/SDL#81ea86c805f69edc32795c6c83f5be020335ca96",
-            .hash = "sdl-0.2.6+3.2.20-7uIn9CEjfwEuULkL_SE91eY6mMfM8KBoFolexyZHWr76",
-            .lazy = true,
+            .url = "https://github.com/castholm/SDL/archive/refs/tags/v0.3.0+3.2.22.tar.gz",
+            .hash = "sdl-0.3.0+3.2.22-7uIn9Pg3fwGG2IyIOPxxOSVe-75nUng9clt7tXGFLzMr",
         },
+
         .freetype = .{
             .url = "git+https://github.com/david-vanderson/freetype#827f12fbf46511c679d722dc55ac123c3c2684fa",
             .hash = "freetype-2.13.0-alzUkfmNqAAjowVUPRfgA-1i6Rj-bvigTeTytje2oxJt",
-            .lazy = true,
         },
-        .raylib = .{
-            .url = "git+https://github.com/raysan5/raylib#0e73e0ea640d969762bc961106df9538817595e4",
-            .hash = "raylib-5.5.0-whq8uLZNxwQbz-EkzfvEctRpeTg8Nk5WZKm6lJ-J8SQt",
-            .lazy = true,
-        },
-        //used in the raylib-ontop example
-        .raygui = .{
-            .url = "https://github.com/raysan5/raygui/archive/33f1659.tar.gz",
-            .hash = "N-V-__8AAAHFTwBfBg00dnFXcYkNbjC8BSyi1CDcrnh12ypL",
-            .lazy = true,
-        },
-        // required for the directx11 backend
-        .win32 = .{
-            .url = "git+https://github.com/marlersoft/zigwin32#be58d3816810c1e4c20781cc7223a60906467d3c",
-            .hash = "zigwin32-25.0.28-preview-AAAAAHsJ-wPA4nREAzT_OOkF6gLrornNuHqREfHDADoS",
-            .lazy = true,
-        },
+
         // for rendering tvg icons
         .svg2tvg = .{
             .url = "git+https://github.com/nat3Github/zig-lib-svg2tvg#78797970be3d676a9087696ec36d6f29a522b580",
