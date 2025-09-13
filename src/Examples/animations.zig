@@ -197,6 +197,7 @@ pub fn animations() void {
         dvui.label(@src(), "Estimate of frame overhead {d:6} us", .{dvui.currentWindow().loop_target_slop}, .{});
         switch (dvui.backend.kind) {
             .sdl3 => dvui.label(@src(), "sdl: updated when not interrupted by event", .{}, .{}),
+            .sdl3_vk => dvui.label(@src(), "sdl3_vk: updated when not interrupted by event", .{}, .{}),
             .web => dvui.label(@src(), "web: updated when not interrupted by event", .{}, .{}),
             .custom, .testing => {},
         }

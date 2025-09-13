@@ -5,6 +5,7 @@
 pub const Backend = enum {
     custom,
     sdl3,
+    sdl3_vk,
     web,
     /// Does no rendering!
     testing,

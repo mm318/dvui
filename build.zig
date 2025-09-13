@@ -3,13 +3,6 @@ const enums_backend = @import("src/enums_backend.zig");
 const Pkg = std.Build.Pkg;
 const Compile = std.Build.Step.Compile;
 
-// NOTE: Keep in-sync with raylib's definition
-pub const LinuxDisplayBackend = enum {
-    X11,
-    Wayland,
-    Both,
-};
-
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -220,6 +213,47 @@ pub fn buildBackend(backend: enums_backend.Backend, test_dvui_and_app: bool, dvu
             addExample("sdl3-ontop", b.path("examples/sdl-ontop.zig"), true, example_opts, dvui_opts);
             addExample("sdl3-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
         },
+        .sdl3_vk => {
+            const sdl3_vk_mod = b.addModule("sdl3_vk", .{
+                .root_source_file = b.path("src/backends/sdl3_vk.zig"),
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+            });
+            dvui_opts.addChecks(sdl3_vk_mod, "sdl3_vk-backend");
+            dvui_opts.addTests(sdl3_vk_mod, "sdl3_vk-backend");
+
+            const sdl3_vk_options = b.addOptions();
+            sdl3_vk_options.addOption(
+                ?bool,
+                "callbacks",
+                b.option(bool, "sdl3_vk-callbacks", "Use callbacks for live resizing on windows/mac"),
+            );
+
+            if (b.systemIntegrationOption("sdl3", .{})) {
+                // SDL3 from system
+                sdl3_vk_options.addOption(std.SemanticVersion, "version", .{ .major = 3, .minor = 0, .patch = 0 });
+                sdl3_vk_mod.linkSystemLibrary("SDL3", .{});
+            } else {
+                // SDL3 compiled from source
+                sdl3_vk_options.addOption(std.SemanticVersion, "version", .{ .major = 3, .minor = 0, .patch = 0 });
+                if (b.lazyDependency("sdl3", .{
+                    .target = target,
+                    .optimize = optimize,
+                })) |sdl3| {
+                    sdl3_vk_mod.linkLibrary(sdl3.artifact("SDL3"));
+                }
+            }
+            sdl3_vk_mod.addOptions("sdl_options", sdl3_vk_options);
+
+            const dvui_sdl3_vk = addDvuiModule("dvui_sdl3_vk", dvui_opts);
+            dvui_opts.addChecks(dvui_sdl3_vk, "dvui_sdl3_vk");
+            if (test_dvui_and_app) {
+                dvui_opts.addTests(dvui_sdl3_vk, "dvui_sdl3_vk");
+            }
+
+            linkBackend(dvui_sdl3_vk, sdl3_vk_mod);
+        },
         .web => {
             const export_symbol_names = &[_][]const u8{
                 "dvui_init",
@@ -300,7 +334,13 @@ const DvuiModuleOptions = struct {
     build_options: *std.Build.Step.Options,
 
     fn addChecks(self: *const @This(), mod: *std.Build.Module, name: []const u8) void {
-        const tests = self.b.addTest(.{ .root_module = mod, .name = name, .filters = self.test_filters, .use_lld = self.use_lld, .use_llvm = true });
+        const tests = self.b.addTest(.{
+            .root_module = mod,
+            .name = name,
+            .filters = self.test_filters,
+            .use_lld = self.use_lld,
+            .use_llvm = true,
+        });
         self.b.installArtifact(tests); // Compile check on default install step
         if (self.check_step) |step| {
             step.dependOn(&tests.step);
