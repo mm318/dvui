@@ -24,10 +24,12 @@ pub fn init(impl: *Implementation) Backend {
 pub fn nanoTime(self: Backend) i128 {
     return self.impl.nanoTime();
 }
+
 /// Sleep for nanoseconds.
 pub fn sleep(self: Backend, ns: u64) void {
     return self.impl.sleep(ns);
 }
+
 /// Called by dvui during `dvui.Window.begin`, so prior to any dvui
 /// rendering.  Use to setup anything needed for this frame.  The arena
 /// arg is cleared before `dvui.Window.begin` is called next, useful for any

@@ -212,35 +212,33 @@ fn gui_frame() bool {
 
         // rs.r is the pixel rectangle, rs.s is the scale factor (like for
         // hidpi screens or display scaling)
-        var rect: if (SDLBackend.sdl3) SDLBackend.c.SDL_FRect else SDLBackend.c.SDL_Rect = undefined;
-        if (SDLBackend.sdl3) rect = .{
+        var rect: SDLBackend.c.SDL_FRect = undefined;
+        rect = .{
             .x = (rs.r.x + 4 * rs.s),
             .y = (rs.r.y + 4 * rs.s),
             .w = (20 * rs.s),
             .h = (20 * rs.s),
-        } else rect = .{
-            .x = @intFromFloat(rs.r.x + 4 * rs.s),
-            .y = @intFromFloat(rs.r.y + 4 * rs.s),
-            .w = @intFromFloat(20 * rs.s),
-            .h = @intFromFloat(20 * rs.s),
         };
         _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 0, 255);
         _ = SDLBackend.c.SDL_RenderFillRect(backend.renderer, &rect);
 
-        rect.x += if (SDLBackend.sdl3) 24 * rs.s else @intFromFloat(24 * rs.s);
+        rect.x += 24 * rs.s;
         _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 255, 0, 255);
         _ = SDLBackend.c.SDL_RenderFillRect(backend.renderer, &rect);
 
-        rect.x += if (SDLBackend.sdl3) 24 * rs.s else @intFromFloat(24 * rs.s);
+        rect.x += 24 * rs.s;
         _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 0, 0, 255, 255);
         _ = SDLBackend.c.SDL_RenderFillRect(backend.renderer, &rect);
 
         _ = SDLBackend.c.SDL_SetRenderDrawColor(backend.renderer, 255, 0, 255, 255);
 
-        if (SDLBackend.sdl3)
-            _ = SDLBackend.c.SDL_RenderLine(backend.renderer, (rs.r.x + 4 * rs.s), (rs.r.y + 30 * rs.s), (rs.r.x + rs.r.w - 8 * rs.s), (rs.r.y + 30 * rs.s))
-        else
-            _ = SDLBackend.c.SDL_RenderDrawLine(backend.renderer, @intFromFloat(rs.r.x + 4 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s), @intFromFloat(rs.r.x + rs.r.w - 8 * rs.s), @intFromFloat(rs.r.y + 30 * rs.s));
+        _ = SDLBackend.c.SDL_RenderLine(
+            backend.renderer,
+            (rs.r.x + 4 * rs.s),
+            (rs.r.y + 30 * rs.s),
+            (rs.r.x + rs.r.w - 8 * rs.s),
+            (rs.r.y + 30 * rs.s),
+        );
     }
 
     if (dvui.button(@src(), "Show Dialog From\nOutside Frame", .{}, .{})) {

@@ -3,13 +3,6 @@ const enums_backend = @import("src/enums_backend.zig");
 const Pkg = std.Build.Pkg;
 const Compile = std.Build.Step.Compile;
 
-// NOTE: Keep in-sync with raylib's definition
-pub const LinuxDisplayBackend = enum {
-    X11,
-    Wayland,
-    Both,
-};
-
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -102,7 +95,7 @@ pub fn build(b: *std.Build) !void {
         docs_step.dependOn(&install_docs.step);
 
         if (generate_doc_images) {
-            if (b.modules.get("dvui_sdl2")) |dvui| {
+            if (b.modules.get("dvui_sdl3")) |dvui| {
                 const image_tests = b.addTest(.{
                     .name = "generate-images",
                     .root_module = dvui,
@@ -173,7 +166,7 @@ pub fn buildBackend(backend: enums_backend.Backend, test_dvui_and_app: bool, dvu
         },
         .sdl3 => {
             const sdl_mod = b.addModule("sdl3", .{
-                .root_source_file = b.path("src/backends/sdl.zig"),
+                .root_source_file = b.path("src/backends/sdl3.zig"),
                 .target = target,
                 .optimize = optimize,
                 .link_libc = true,
@@ -300,7 +293,13 @@ const DvuiModuleOptions = struct {
     build_options: *std.Build.Step.Options,
 
     fn addChecks(self: *const @This(), mod: *std.Build.Module, name: []const u8) void {
-        const tests = self.b.addTest(.{ .root_module = mod, .name = name, .filters = self.test_filters, .use_lld = self.use_lld, .use_llvm = true });
+        const tests = self.b.addTest(.{
+            .root_module = mod,
+            .name = name,
+            .filters = self.test_filters,
+            .use_lld = self.use_lld,
+            .use_llvm = true,
+        });
         self.b.installArtifact(tests); // Compile check on default install step
         if (self.check_step) |step| {
             step.dependOn(&tests.step);
