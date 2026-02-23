@@ -68,10 +68,6 @@ pub fn main() !void {
         // GPU backend handles clearing via render pass (LOAD_OP_CLEAR)
 
         const keep_running = gui_frame();
-        if (!keep_running) {
-            std.log.info("Exiting main loop, keep_running = false", .{});
-            break :main_loop;
-        }
 
         // marks end of dvui frame, don't call dvui functions after this
         const end_micros = try win.end(.{});
@@ -82,6 +78,11 @@ pub fn main() !void {
 
         // render frame to OS
         try backend.renderPresent();
+
+        if (!keep_running) {
+            std.log.info("Exiting main loop, keep_running = false", .{});
+            break :main_loop;
+        }
 
         // waitTime and beginWait combine to achieve variable framerates
         const wait_event_micros = win.waitTime(end_micros);
