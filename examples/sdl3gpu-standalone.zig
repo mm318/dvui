@@ -5,7 +5,7 @@ const SDLBackend = @import("sdl3gpu-backend");
 const window_icon_png = @embedFile("zig-favicon.png");
 const c = SDLBackend.c;
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
 const gpa = gpa_instance.allocator();
 
 const vsync = true;

@@ -17,14 +17,9 @@
         "vendor",
     },
     .dependencies = .{
-        .sdl = .{
-            .url = "git+https://github.com/david-vanderson/SDL#0a3a406bedafd98c7b5b31a445da78087e249536",
-            .hash = "SDL-2.32.10-JToi38y3EgFPWSo1bTIayzJ_NsXqafXRvWRFK55WaCLL",
-            .lazy = true,
-        },
         .sdl3 = .{
-            .url = "git+https://codeberg.org/brodo/SDL.git?ref=v3.4.2#50804093f262be4a8572917e9f167d1db88ee619",
-            .hash = "sdl-0.4.0+3.4.2-SDL--kUpAgD4KSzqQJ5MPxKjEdcAZXbMGvdyPqvhaXaV",
+            .url = "git+https://github.com/castholm/SDL#c5ba24c694b5d520cdc1d029d8def398690d6894",
+            .hash = "sdl-0.4.2+3.4.4-SDL--kB3pQHKG_4zWG-pH04ZcZZj_IRF7dwMpxNVGwd6",
             .lazy = true,
         },
         .freetype = .{

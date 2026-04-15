@@ -4,8 +4,9 @@
 /// build.zig from depending on dvui.zig.
 pub const Backend = enum {
     custom,
-    /// DEPRECATED: Use either sdl2 or sdl3
+    /// DEPRECATED: Use either sdl3 or sdl3gpu
     sdl,
+    /// REMOVED: kept so selecting `-Dbackend=sdl2` can emit a targeted error
     sdl2,
     sdl3,
     sdl3gpu,

@@ -3,7 +3,7 @@ const dvui = @import("dvui");
 const Backend = @import("dx11-backend");
 const win32 = Backend.win32;
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
 const gpa = gpa_instance.allocator();
 
 const log = std.log.scoped(.Dx11Ontop);

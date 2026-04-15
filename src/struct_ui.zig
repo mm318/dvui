@@ -595,8 +595,9 @@ pub fn enumFieldWidgetOptional(
         if (choice) |ch| {
             @setEvalBranchQuota(5000);
             field_value_optional_ptr.* = std.meta.stringToEnum(T, @tagName(@as(std.meta.FieldEnum(T), @enumFromInt(ch)))).?;
-        } else
+        } else {
             field_value_optional_ptr.* = null;
+        }
     }
 }
 

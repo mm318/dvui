@@ -482,7 +482,7 @@ pub fn logError(src: std.builtin.SourceLocation, err: anyerror, comptime fmt: []
     if (err_trace_enabled) {
         if (@errorReturnTrace()) |t| {
             std.debug.print("error return context:\n", .{});
-            std.debug.dumpStackTrace(t);
+            std.debug.dumpErrorReturnTrace(t);
         }
     }
     if (!builtin.strip_debug_info) {

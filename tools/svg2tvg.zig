@@ -1,13 +1,15 @@
 const std = @import("std");
 const svg2tvg = @import("svg2tvg");
 
-pub fn main() !void {
-    return impl();
+pub fn main(init: std.process.Init) !void {
+    return impl(init);
 }
 
-fn impl() !void {
-    const gpa = std.heap.smp_allocator;
-    var args = try std.process.argsWithAllocator(gpa);
+fn impl(init: std.process.Init) !void {
+    const gpa = init.gpa;
+    const io = init.io;
+    const cwd = std.Io.Dir.cwd();
+    var args = try init.minimal.args.iterateAllocator(gpa);
     defer args.deinit();
 
     _ = args.next();
@@ -23,26 +25,15 @@ fn impl() !void {
     };
 
     errdefer {
-        var path_buf: [1024]u8 = undefined;
-        std.debug.print("error: input_path='{s}' output_path='{s}'", .{ input_path, output_path });
-        const cwd = std.fs.cwd().realpath(".", &path_buf) catch "CWD TOO LONG";
-        std.debug.print(" cwd='{s}'\n", .{cwd});
+        std.debug.print("error: input_path='{s}' output_path='{s}'\n", .{ input_path, output_path });
     }
 
-    const input_file = try std.fs.cwd().openFile(input_path, .{});
-    defer input_file.close();
-
-    const output_file = try std.fs.cwd().createFile(output_path, .{});
-    defer output_file.close();
-
-    var buf: [8192]u8 = undefined;
-    //var reader = input_file.reader(read_buf);
-
-    const svg_bytes = try input_file.readToEndAlloc(gpa, 1 << 16);
+    const svg_bytes = try cwd.readFileAlloc(io, input_path, gpa, .limited(1 << 16));
+    defer gpa.free(svg_bytes);
     const tvg_bytes = try svg2tvg.tvg_from_svg(gpa, svg_bytes, .{});
-
-    var writer = output_file.writer(&buf);
-    try writer.interface.writeAll(tvg_bytes);
-    try writer.interface.flush();
-    // REPORTME: would be nice to have a
+    defer gpa.free(tvg_bytes);
+    try cwd.writeFile(io, .{
+        .sub_path = output_path,
+        .data = tvg_bytes,
+    });
 }

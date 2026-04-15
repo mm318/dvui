@@ -8,7 +8,7 @@ const zgl = Backend.zgl;
 // errors are handled.
 pub const opengl_error_handling = zgl.ErrorHandling.assert;
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
 const gpa = gpa_instance.allocator();
 var window: *zglfw.Window = undefined;
 

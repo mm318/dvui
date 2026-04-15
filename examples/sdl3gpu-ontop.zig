@@ -7,7 +7,7 @@ comptime {
 
 // straight copy-paste of sdl3 backend example,
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
 const gpa = gpa_instance.allocator();
 
 pub const c = SDLBackend.c;
@@ -66,7 +66,7 @@ pub fn main() !void {
         backend.swapchain_texture = swapchain_texture;
 
         // marks the beginning of a frame for dvui, can call dvui functions after this
-        try win.begin(std.time.nanoTimestamp());
+        try win.begin(backend.nanoTime());
 
         // send events to dvui if they belong to floating windows
         var event: c.SDL_Event = undefined;

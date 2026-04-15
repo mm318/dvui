@@ -30,9 +30,9 @@ The overhead of creating AccessKit nodes is only incurred when the operating sys
 AccessKit can be included as either a static or dynamic link library. Use `-Daccesskit=static` or `-Daccesskit=shared` to enable AccessKit support. 
 
 Not all combinations of backends and operating systems are currently supported. 
-- Linux - Supports all backends in for shared and static libraries. SDL2, SDL3 and Raylib.
+- Linux - Supports all backends in for shared and static libraries. SDL3 and Raylib.
 - Windows - Support for all backends, except raylib static due to symbol clashes.
-- MacOS - Supports all backends in for shared and static libraries. SDL2, SDL3 and Raylib.
+- MacOS - Supports all backends in for shared and static libraries. SDL3 and Raylib.
 - Web - Not currently supported by AccessKit but it is planned. 
 
 When you compile you application with AccessKit enabled, most of the work is taken care of for you and your users will gain most of the benefits of accessibility support. However, DVUI doesn't know your application's intent or any semantic details about the UX, so it is not possible to automate everything. 
@@ -246,4 +246,3 @@ Ignoring these rules will not break anything, but will make it harder for access
 | checkbox | check_box | Y | Y | N | Fully supported |
 | radio | radio_button | Y* | Y | N | Best practice: Create a radio group with a surrounding radio group widget|
 | textEntryNumber | number_input | Y | Y | N | Fully supported. Supports min, max and valid/invalid. |
-

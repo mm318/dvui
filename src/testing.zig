@@ -81,13 +81,34 @@ pub const InitOptions = struct {
     snapshot_dir: []const u8 = "snapshots",
 };
 
+fn createDirPath(io: std.Io, path: []const u8) !void {
+    if (std.Io.Dir.path.isAbsolute(path)) {
+        return std.Io.Dir.createDirAbsolute(io, path, .default_dir);
+    }
+    return std.Io.Dir.cwd().createDir(io, path, .default_dir);
+}
+
+fn openDirPath(io: std.Io, path: []const u8, options: std.Io.Dir.OpenOptions) !std.Io.Dir {
+    if (std.Io.Dir.path.isAbsolute(path)) {
+        return std.Io.Dir.openDirAbsolute(io, path, options);
+    }
+    return std.Io.Dir.cwd().openDir(io, path, options);
+}
+
+fn hasEnvVar(name: [*:0]const u8) bool {
+    return std.c.getenv(name) != null;
+}
+
 pub fn init(options: InitOptions) !Self {
+    const io = std.Io.Threaded.global_single_threaded.io();
+
     // init SDL backend (creates and owns OS window)
     const backend = try options.allocator.create(Backend);
     errdefer options.allocator.destroy(backend);
     backend.* = switch (Backend.kind) {
         .sdl2, .sdl3 => try Backend.initWindow(.{
             .allocator = options.allocator,
+            .io = io,
             .size = options.window_size,
             .vsync = false,
             .title = "",
@@ -107,7 +128,7 @@ pub fn init(options: InitOptions) !Self {
     if (should_write_snapshots()) {
         // ensure snapshot directory exists
         // NOTE: do fs operation through cwd to handle relative and absolute paths
-        std.Io.Dir.cwd().makeDir(options.snapshot_dir) catch |err| switch (err) {
+        createDirPath(io, options.snapshot_dir) catch |err| switch (err) {
             error.PathAlreadyExists => {},
             else => return err,
         };
@@ -129,6 +150,7 @@ pub fn init(options: InitOptions) !Self {
     window.begin(0) catch unreachable;
 
     return .{
+        .io = io,
         .allocator = options.allocator,
         .backend = backend,
         .window = window,
@@ -237,30 +259,30 @@ pub fn snapshot(self: *Self, src: std.builtin.SourceLocation, frame: dvui.App.fr
     const filename = try std.fmt.allocPrint(self.allocator, "{s}-{s}-{d}", .{ src.file, src.fn_name, self.snapshot_index });
     defer self.allocator.free(filename);
     // NOTE: do fs operation through cwd to handle relative and absolute paths
-    var dir = std.Io.Dir.cwd().openDir(self.snapshot_dir, .{}) catch |err| switch (err) {
+    var dir = openDirPath(self.io, self.snapshot_dir, .{}) catch |err| switch (err) {
         error.FileNotFound => {
             std.debug.print("{s}:{d}:{d}: Snapshot directory did not exist! Run the test with DVUI_SNAPSHOT_WRITE to create all snapshot files\n", .{ src.file, src.line, src.column });
             return error.MissingSnapshotFile;
         },
         else => return err,
     };
-    defer dir.close();
+    defer dir.close(self.io);
 
     widget_hasher = .init();
     defer widget_hasher = null;
 
     if (@import("build_options").snapshot_image_suffix) |image_suffix| {
-        dir.makeDir("images") catch |err| switch (err) {
+        dir.createDir(self.io, "images", .default_dir) catch |err| switch (err) {
             error.PathAlreadyExists => {},
             else => return err,
         };
         const image_name = try std.fmt.allocPrint(self.allocator, "images/{s}-{s}.png", .{ filename, image_suffix });
         defer self.allocator.free(image_name);
-        var file = try dir.createFile(image_name, .{});
-        defer file.close();
+        var file = try dir.createFile(self.io, image_name, .{});
+        defer file.close(self.io);
 
         var buf: [512]u8 = undefined;
-        var writer = file.writer(&buf);
+        var writer = file.writer(self.io, &buf);
         try capturePng(frame, null, &writer.interface);
         try writer.end();
         // Do not continue with checking hashes as it is not deterministic across content_scales because
@@ -275,13 +297,14 @@ pub fn snapshot(self: *Self, src: std.builtin.SourceLocation, frame: dvui.App.fr
     // used both for reading or writing the hash
     var hash_buf: [@sizeOf(HashInt) * 2]u8 = undefined;
 
-    const file = dir.openFile(filename, .{ .mode = .read_write }) catch |err| switch (err) {
-        std.fs.File.OpenError.FileNotFound => {
+    const previous_hash_bytes = dir.readFileAlloc(self.io, filename, self.allocator, .limited(hash_buf.len)) catch |err| switch (err) {
+        error.FileNotFound => {
             if (should_write_snapshots()) {
-                const file = try dir.createFile(filename, .{});
-                var writer = file.writer(&hash_buf);
-                try writer.interface.print("{X}", .{hash});
-                try writer.end();
+                const hash_text = try std.fmt.bufPrint(&hash_buf, "{X}", .{hash});
+                try dir.writeFile(self.io, .{
+                    .sub_path = filename,
+                    .data = hash_text,
+                });
                 std.debug.print("Snapshot: Created file \"{s}\"\n", .{filename});
                 return;
             }
@@ -290,17 +313,17 @@ pub fn snapshot(self: *Self, src: std.builtin.SourceLocation, frame: dvui.App.fr
         },
         else => return err,
     };
-    defer file.close();
+    defer self.allocator.free(previous_hash_bytes);
 
-    const len = try file.readAll(&hash_buf);
-    const prev_hash = try std.fmt.parseUnsigned(HashInt, hash_buf[0..len], 16);
+    const prev_hash = try std.fmt.parseUnsigned(HashInt, previous_hash_bytes, 16);
 
     if (prev_hash != hash) {
         if (should_write_snapshots()) {
-            var writer = file.writer(&hash_buf);
-            try writer.seekTo(0);
-            try writer.interface.print("{X}", .{hash});
-            try writer.end();
+            const hash_text = try std.fmt.bufPrint(&hash_buf, "{X}", .{hash});
+            try dir.writeFile(self.io, .{
+                .sub_path = filename,
+                .data = hash_text,
+            });
             std.debug.print("Snapshot: Overwrote file \"{s}\"\n", .{filename});
             return;
         }
@@ -310,11 +333,11 @@ pub fn snapshot(self: *Self, src: std.builtin.SourceLocation, frame: dvui.App.fr
 
 fn should_ignore_snapshots() bool {
     // If there is a snapshot image suffix, we expect to generate images, thus not ignore the test
-    return @import("build_options").snapshot_image_suffix == null and (Backend.kind != .testing or std.process.hasEnvVarConstant("DVUI_SNAPSHOT_IGNORE"));
+    return @import("build_options").snapshot_image_suffix == null and (Backend.kind != .testing or hasEnvVar("DVUI_SNAPSHOT_IGNORE"));
 }
 
 fn should_write_snapshots() bool {
-    return !should_ignore_snapshots() and std.process.hasEnvVarConstant("DVUI_SNAPSHOT_WRITE");
+    return !should_ignore_snapshots() and hasEnvVar("DVUI_SNAPSHOT_WRITE");
 }
 
 /// Internal use only!
@@ -333,12 +356,16 @@ pub fn saveImage(self: *Self, frame: dvui.App.frameFunction, rect: ?dvui.Rect.Ph
         return;
     }
 
-    var dir = try std.Io.Dir.cwd().makeOpenPath(self.image_dir.?, .{});
-    defer dir.close();
-    const file = try dir.createFile(filename, .{});
-    defer file.close();
+    createDirPath(self.io, self.image_dir.?) catch |err| switch (err) {
+        error.PathAlreadyExists => {},
+        else => return err,
+    };
+    var dir = try openDirPath(self.io, self.image_dir.?, .{});
+    defer dir.close(self.io);
+    var file = try dir.createFile(self.io, filename, .{});
+    defer file.close(self.io);
     var buf: [512]u8 = undefined;
-    var writer = file.writer(&buf);
+    var writer = file.writer(self.io, &buf);
     try capturePng(frame, rect, &writer.interface);
     try writer.end();
 }

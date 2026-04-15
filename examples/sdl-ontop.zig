@@ -5,7 +5,7 @@ comptime {
     std.debug.assert(@hasDecl(SDLBackend, "SDLBackend"));
 }
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
 const gpa = gpa_instance.allocator();
 
 pub const c = SDLBackend.c;
@@ -38,7 +38,7 @@ pub fn main() !void {
     defer backend.deinit();
 
     // init dvui Window (maps onto a single OS window)
-    var win = try dvui.Window.init(@src(), gpa, io.io(), backend.backend(), .{});
+    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{});
     defer win.deinit();
 
     main_loop: while (true) {

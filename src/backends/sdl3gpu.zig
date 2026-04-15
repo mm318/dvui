@@ -239,7 +239,7 @@ const FrameUploads = struct {
     index: UploadBuffer(dvui.Vertex.Index),
 
     // Draw calls tracking
-    draws: std.ArrayList(RectDraw) = .{},
+    draws: std.ArrayList(RectDraw) = .empty,
     allocator: std.mem.Allocator,
 
     // Copy pass for uploading data each frame
@@ -1027,11 +1027,11 @@ pub fn backend(self: *SDLBackend) dvui.Backend {
 }
 
 pub fn nanoTime(_: *SDLBackend) i128 {
-    return std.time.nanoTimestamp();
+    return @intCast(c.SDL_GetTicksNS());
 }
 
 pub fn sleep(_: *SDLBackend, ns: u64) void {
-    std.Thread.sleep(ns);
+    c.SDL_DelayNS(@intCast(ns));
 }
 
 pub fn clipboardText(self: *SDLBackend) ![]const u8 {
@@ -2003,7 +2003,7 @@ pub fn main() !u8 {
 const CallbackState = struct {
     win: dvui.Window,
     back: SDLBackend,
-    gpa: std.heap.GeneralPurposeAllocator(.{}) = .init,
+    gpa: std.heap.DebugAllocator(.{}) = .init,
     interrupted: bool = false,
     have_resize: bool = false,
     no_wait: bool = false,

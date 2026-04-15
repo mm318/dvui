@@ -66,12 +66,6 @@ Tested with Zig v0.15.2 (for Zig v0.14.1, use DVUI [tag v0.3.0](https://github.c
       <td><code>sdl3gpu-ontop</code></td>
     </tr>
     <tr>
-      <td><strong>SDL2</strong></td>
-      <td><code>sdl2-app</code></td>
-      <td><code>sdl2-standalone</code></td>
-      <td><code>sdl2-ontop</code></td>
-    </tr>
-    <tr>
       <td>
         <strong>Raylib</strong>
         <br>
@@ -116,7 +110,8 @@ Tested with Zig v0.15.2 (for Zig v0.14.1, use DVUI [tag v0.3.0](https://github.c
 
 ### Docs
 
-- `zig build docs -Dgenerate-images`
+- `zig build docs`
+- `-Dgenerate-images` is no longer supported because the SDL2 backend was removed
 - Load `./zig-out/docs/index.html`
 - [Online Docs](https://david-vanderson.github.io/docs/)
 
@@ -160,7 +155,7 @@ Discuss yours on:
   - debugging on top of existing application
   - see [Ontop-Floating-Windows](#Ontop-Floating-Windows)
 - Backends
-  - [SDL2 and SDL3](https://libsdl.org/)
+  - [SDL3](https://libsdl.org/)
   - [Web](https://david-vanderson.github.io/demo)
   - [Raylib (C)](https://www.raylib.com/)
   - [Raylib (Zig)](https://github.com/raylib-zig/raylib-zig)

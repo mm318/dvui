@@ -995,7 +995,7 @@ pub fn main() !void {
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
 
-    var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
     const gpa = gpa_instance.allocator();
     defer _ = gpa_instance.deinit();
 

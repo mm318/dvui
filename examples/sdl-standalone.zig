@@ -9,7 +9,7 @@ comptime {
 
 const window_icon_png = @embedFile("zig-favicon.png");
 
-var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
 const gpa = gpa_instance.allocator();
 
 const vsync = true;
@@ -36,7 +36,7 @@ pub fn main() !void {
 
     defer if (gpa_instance.deinit() != .ok) @panic("Memory leak on exit!");
 
-    var io: std.Io.Threaded = .init(gpa);
+    var io: std.Io.Threaded = .init(gpa, .{});
     defer io.deinit();
 
     // init SDL backend (creates and owns OS window)
@@ -55,7 +55,7 @@ pub fn main() !void {
     _ = SDLBackend.c.SDL_EnableScreenSaver();
 
     // init dvui Window (maps onto a single OS window)
-    var win = try dvui.Window.init(@src(), gpa, io.io(), backend.backend(), .{
+    var win = try dvui.Window.init(@src(), gpa, backend.backend(), .{
         // you can set the default theme here in the init options
         .theme = switch (backend.preferredColorScheme() orelse .light) {
             .light => dvui.Theme.builtin.adwaita_light,

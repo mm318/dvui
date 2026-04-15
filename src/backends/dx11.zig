@@ -1668,7 +1668,7 @@ pub fn main() !void {
 
     const window_class = win32.L("DvuiWindow");
 
-    var gpa_instance = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
     const gpa = gpa_instance.allocator();
     defer _ = gpa_instance.deinit();
 
