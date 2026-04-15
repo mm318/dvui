@@ -862,8 +862,9 @@ pub fn main() !void {
     const app = dvui.App.get() orelse return error.DvuiAppNotDefined;
     const config = app.config.get();
 
-    var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-    const gpa = gpa_instance.allocator();
+    var runtime_allocator: dvui.RuntimeAllocator = .{};
+    const gpa = runtime_allocator.allocator();
+    defer runtime_allocator.deinit();
     var window: *zglfw.Window = undefined;
 
     try zglfw.init();

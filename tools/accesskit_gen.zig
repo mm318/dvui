@@ -79,9 +79,8 @@ var exclude_decl: std.StringHashMapUnmanaged(void) = .empty;
 // Roles need to be output twice. Save their decls here.
 var role_decls: std.ArrayList([]const u8) = .empty;
 
-pub fn main() !void {
-    var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
-    const gpa = debug_allocator.allocator();
+pub fn main(init: std.process.Init) !void {
+    const gpa = init.gpa;
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writerStreaming(&stdout_buffer);
     const stdout = &stdout_writer.interface;

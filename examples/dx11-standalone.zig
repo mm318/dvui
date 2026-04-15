@@ -5,8 +5,8 @@ const win32 = Backend.win32;
 
 const window_icon_png = @embedFile("zig-favicon.png");
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 
 const ExtraWindow = struct {
     state: *Backend.WindowState,
@@ -32,7 +32,7 @@ pub fn main() !void {
         // on windows graphical apps have no console, so output goes to nowhere - attach it manually. related: https://github.com/ziglang/zig/issues/4196
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
-    defer _ = gpa_instance.deinit();
+    defer runtime_allocator.deinit();
 
     Backend.RegisterClass(window_class, .{}) catch win32.panicWin32(
         "RegisterClass",

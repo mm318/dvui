@@ -8,8 +8,8 @@ comptime {
 
 const window_icon_png = @embedFile("zig-favicon.png");
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 
 const vsync = true;
 var scale_val: f32 = 1.0;
@@ -25,7 +25,7 @@ pub fn main() !void {
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
     RaylibBackend.enableRaylibLogging();
-    defer _ = gpa_instance.deinit();
+    defer runtime_allocator.deinit();
 
     // init Raylib backend (creates OS window)
     // initWindow() means the backend calls CloseWindow for you in deinit()

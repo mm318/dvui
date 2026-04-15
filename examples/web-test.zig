@@ -26,8 +26,8 @@ pub const std_options: std.Options = .{
     .logFn = logFn,
 };
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 
 var touchPoints: [2]?dvui.Point.Physical = [_]?dvui.Point.Physical{null} ** 2;
 var orig_content_scale: f32 = 1.0;
@@ -56,6 +56,7 @@ export fn dvui_init(platform_ptr: [*]const u8, platform_len: usize) i32 {
 export fn dvui_deinit() void {
     WebBackend.win.deinit();
     WebBackend.back.deinit();
+    runtime_allocator.deinit();
 }
 
 // return number of micros to wait (interrupted by events) for next frame

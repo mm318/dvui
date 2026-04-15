@@ -40,6 +40,7 @@ pub const fnv = std.hash.Fnv1a_64;
 
 pub const App = @import("App.zig");
 pub const Backend = @import("Backend.zig");
+pub const RuntimeAllocator = @import("RuntimeAllocator.zig");
 pub const Window = @import("Window.zig");
 pub const Subwindows = @import("Subwindows.zig");
 pub const Examples = @import("Examples.zig");

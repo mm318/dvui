@@ -1644,7 +1644,6 @@ pub fn main(main_init: std.process.Init) !u8 {
 
 /// used when doing sdl callbacks
 const CallbackState = struct {
-    var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
     var threaded_io: ?std.Io.Threaded = null;
 
     win: dvui.Window,
@@ -1731,8 +1730,6 @@ fn appQuit(_: ?*anyopaque, result: c.SDL_AppResult) callconv(.c) void {
     appState.win.deinit();
     appState.back.deinit();
     if (CallbackState.threaded_io) |*to| to.deinit();
-    if (CallbackState.debug_allocator.deinit() != .ok) @panic("Memory leak on exit!");
-
     // SDL will clean up the window/renderer for us.
 }
 

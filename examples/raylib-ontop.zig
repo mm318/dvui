@@ -17,10 +17,9 @@ pub fn main() !void {
         try dvui.Backend.Common.windowsAttachConsole();
     }
     RaylibBackend.enableRaylibLogging();
-    var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-    const gpa = gpa_instance.allocator();
-
-    defer _ = gpa_instance.deinit();
+    var runtime_allocator: dvui.RuntimeAllocator = .{};
+    const gpa = runtime_allocator.allocator();
+    defer runtime_allocator.deinit();
 
     // create OS window directly with raylib
     ray.SetConfigFlags(ray.FLAG_WINDOW_RESIZABLE);

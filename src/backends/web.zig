@@ -9,8 +9,8 @@ pub const Context = *WebBackend;
 
 const log = std.log.scoped(.WebBackend);
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 
 pub var win: dvui.Window = undefined;
 pub var win_ok = false;
@@ -539,6 +539,7 @@ pub fn init() !WebBackend {
 }
 
 pub fn deinit(self: *WebBackend) void {
+    runtime_allocator.deinit();
     self.* = undefined;
 }
 

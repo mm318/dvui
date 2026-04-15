@@ -8,8 +8,8 @@ const zgl = Backend.zgl;
 // errors are handled.
 pub const opengl_error_handling = zgl.ErrorHandling.assert;
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 var window: *zglfw.Window = undefined;
 
 fn glGetProcAddress(p: zglfw.GlProc, proc: [:0]const u8) ?zgl.binding.FunctionPointer {
@@ -19,6 +19,7 @@ fn glGetProcAddress(p: zglfw.GlProc, proc: [:0]const u8) ?zgl.binding.FunctionPo
 
 pub fn main() !void {
     dvui.Examples.show_demo_window = true;
+    defer runtime_allocator.deinit();
 
     try app_init();
 }

@@ -1932,9 +1932,9 @@ pub fn main() !u8 {
 
     const init_opts = app.config.get();
 
-    var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-    defer if (gpa_instance.deinit() != .ok) @panic("Memory leak on exit!");
-    const gpa = gpa_instance.allocator();
+    var runtime_allocator: dvui.RuntimeAllocator = .{};
+    defer runtime_allocator.deinit();
+    const gpa = runtime_allocator.allocator();
 
     // init SDL backend (creates and owns OS window)
     var back = try initWindow(.{
@@ -2003,7 +2003,7 @@ pub fn main() !u8 {
 const CallbackState = struct {
     win: dvui.Window,
     back: SDLBackend,
-    gpa: std.heap.DebugAllocator(.{}) = .init,
+    runtime_allocator: dvui.RuntimeAllocator = .{},
     interrupted: bool = false,
     have_resize: bool = false,
     no_wait: bool = false,
@@ -2025,7 +2025,7 @@ fn appInit(appstate: ?*?*anyopaque, argc: c_int, argv: ?[*:null]?[*:0]u8) callco
 
     const init_opts = app.config.get();
 
-    const gpa = appState.gpa.allocator();
+    const gpa = appState.runtime_allocator.allocator();
 
     // init SDL backend (creates and owns OS window)
     appState.back = initWindow(.{
@@ -2079,7 +2079,7 @@ fn appQuit(_: ?*anyopaque, result: c.SDL_AppResult) callconv(.c) void {
     if (app.deinitFn) |deinitFn| deinitFn();
     appState.win.deinit();
     appState.back.deinit();
-    if (appState.gpa.deinit() != .ok) @panic("Memory leak on exit!");
+    appState.runtime_allocator.deinit();
 
     // SDL will clean up the window/renderer for us.
 }

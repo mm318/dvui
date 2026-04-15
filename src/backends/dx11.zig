@@ -1668,9 +1668,9 @@ pub fn main() !void {
 
     const window_class = win32.L("DvuiWindow");
 
-    var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-    const gpa = gpa_instance.allocator();
-    defer _ = gpa_instance.deinit();
+    var runtime_allocator: dvui.RuntimeAllocator = .{};
+    const gpa = runtime_allocator.allocator();
+    defer runtime_allocator.deinit();
 
     RegisterClass(window_class, .{}) catch win32.panicWin32(
         "RegisterClass",

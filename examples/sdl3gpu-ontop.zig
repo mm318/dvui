@@ -7,8 +7,8 @@ comptime {
 
 // straight copy-paste of sdl3 backend example,
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 
 pub const c = SDLBackend.c;
 
@@ -29,7 +29,7 @@ pub fn main() !void {
         dvui.Backend.Common.windowsAttachConsole() catch {};
     }
 
-    defer std.debug.assert(gpa_instance.deinit() == .ok);
+    defer runtime_allocator.deinit();
 
     SDLBackend.enableSDLLogging();
     dvui.Examples.show_demo_window = show_demo;
@@ -38,7 +38,7 @@ pub fn main() !void {
     try app_init();
 
     // create SDL backend using existing window and renderer, app still owns the window/renderer
-    var backend = SDLBackend.init(window, device, gpa_instance.allocator());
+    var backend = SDLBackend.init(window, device, gpa);
     defer backend.deinit();
 
     // init dvui Window (maps onto a single OS window)

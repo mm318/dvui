@@ -5,8 +5,8 @@ const SDLBackend = @import("sdl3gpu-backend");
 const window_icon_png = @embedFile("zig-favicon.png");
 const c = SDLBackend.c;
 
-var gpa_instance: std.heap.DebugAllocator(.{}) = .init;
-const gpa = gpa_instance.allocator();
+var runtime_allocator: dvui.RuntimeAllocator = .{};
+const gpa = runtime_allocator.allocator();
 
 const vsync = true;
 const show_demo = false;
@@ -27,7 +27,7 @@ pub fn main() !void {
 
     dvui.Examples.show_demo_window = show_demo;
 
-    defer if (gpa_instance.deinit() != .ok) @panic("Memory leak on exit!");
+    defer runtime_allocator.deinit();
 
     // init SDL3GPU backend (creates and owns OS window)
     var backend = try SDLBackend.initWindow(.{
