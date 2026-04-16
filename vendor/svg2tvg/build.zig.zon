@@ -1,0 +1,19 @@
+.{
+    .name = .svg2tvg,
+    .fingerprint = 0x15ec8a64b919931e,
+    .version = "0.0.0",
+    .dependencies = .{
+        .xml = .{
+            .path = "../xml",
+        },
+        .z2d = .{
+            .path = "../z2d",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "update.zig",
+    },
+}
