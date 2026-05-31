@@ -1597,11 +1597,11 @@ static void Wayland_VideoCleanup(SDL_VideoDevice *_this)
     }
 
     if (data->shm) {
-        if (wl_shm_get_version(data->shm) >= WL_SHM_RELEASE_SINCE_VERSION) {
-            wl_shm_release(data->shm);
-        } else {
-            wl_shm_destroy(data->shm);
-        }
+        /* wl_shm_release() has been observed to crash in libwayland-client
+         * during SDL_Quit() on Wayland. Destroying the proxy locally is
+         * sufficient during process shutdown and avoids the crash path.
+         */
+        wl_shm_destroy(data->shm);
         data->shm = NULL;
     }
 
