@@ -20,8 +20,7 @@
     },
     .dependencies = .{
         .sdl3 = .{
-            .url = "git+https://github.com/david-vanderson/SDL#5bbcf665494fe14acadf50601edf6d5f74ebf96a",
-            .hash = "sdl-0.4.2+3.4.4-SDL--tB1pQFLgwvCakiiOSoZIuVaz6a6-_gOZC66AGRD",
+            .path = "vendor/sdl3",
             .lazy = true,
         },
         .freetype = .{

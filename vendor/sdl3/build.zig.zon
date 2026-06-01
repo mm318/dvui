@@ -1,0 +1,25 @@
+// © 2024 Carl Åstholm
+// SPDX-License-Identifier: MIT
+
+.{
+    .name = .sdl,
+    .version = "0.5.0+3.4.8",
+    .fingerprint = 0xec638ccbfafe3248,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .sdl_linux_deps = .{
+            .path = "../sdl_linux_deps",
+            .lazy = true,
+        },
+    },
+    .paths = .{
+        "include/",
+        "src/",
+        "build.zig",
+        "build.zig.zon",
+
+        "LICENSES/",
+        "LICENSE.txt",
+        "REUSE.toml",
+    },
+}
