@@ -5,13 +5,6 @@ const RenderBackend = enums_backend.RenderBackend;
 const Pkg = std.Build.Pkg;
 const Compile = std.Build.Step.Compile;
 
-// NOTE: Keep in-sync with raylib's definition
-pub const LinuxDisplayBackend = enum {
-    X11,
-    Wayland,
-    Both,
-};
-
 pub const AccesskitOptions = enum {
     static,
     shared,
@@ -98,7 +91,7 @@ pub fn build(b: *std.Build) !void {
 
     const generate_doc_images = b.option(bool, "generate-images", "Add this to 'docs' to generate images") orelse false;
     if (generate_doc_images) {
-        back_to_build = .sdl2;
+        back_to_build = .sdl3;
     }
 
     const libc_option = b.option(bool, "libc", "Use libc (default is backend specific)");
@@ -107,18 +100,6 @@ pub fn build(b: *std.Build) !void {
     const stb_image_option = b.option(bool, "stb-image", "Build stb_image (default is backend specific, some include stb_image)");
     const tree_sitter_option = b.option(bool, "tree-sitter", "Build tree sitter (default is backend specific)");
     const tvg_option = b.option(bool, "tvg", "Build tvg (default true)") orelse true;
-
-    const wio_unix_backends = b.option([]const u8, "wio_unix_backends", "List of wio backends for Unix (default: all)");
-
-    // This option is triggered only if it involved with raylib backend of any kind
-    var linux_display_backend: ?LinuxDisplayBackend = null;
-    if (back_to_build == null or back_to_build.? == .raylib or back_to_build.? == .raylib_zig) {
-        linux_display_backend = b.option(LinuxDisplayBackend, "linux_display_backend", "If using raylib, which linux display?") orelse blk: {
-            if (b.graph.environ_map.get("WAYLAND_DISPLAY") == null) break :blk .X11;
-            if (b.graph.environ_map.get("DISPLAY") == null) break :blk .Wayland;
-            break :blk .Both;
-        };
-    }
 
     var android_include_path: ?std.Build.LazyPath = null;
     if (target.result.abi.isAndroid()) {
@@ -190,11 +171,9 @@ pub fn build(b: *std.Build) !void {
         .libc = libc_option,
         .freetype = freetype_option,
         .tiny_file_dialogs = tiny_file_dialogs_option,
-        .linux_display_backend = linux_display_backend,
         .stb_image = stb_image_option,
         .tree_sitter = tree_sitter_option,
         .tvg = tvg_option,
-        .wio_unix_backends = wio_unix_backends,
         .sdl3_system_include_path = system_include_path,
         .sdl3_system_framework_path = system_framework_path,
         .sdl3_library_path = library_path,
@@ -205,11 +184,7 @@ pub fn build(b: *std.Build) !void {
         try buildBackend(backend, true, dvui_opts);
     } else {
         for (std.meta.tags(Backend)) |backend| {
-            switch (backend) {
-                .custom, .sdl => continue,
-                .web, .testing => dvui_opts.accesskit = .off,
-                else => {},
-            }
+            dvui_opts.accesskit = if (backend == .web or backend == .testing) .off else accesskit;
             // if we are building all the backends, here's where we do dvui tests
             const test_dvui_and_app = backend == .sdl3;
             try buildBackend(backend, test_dvui_and_app, dvui_opts);
@@ -237,7 +212,7 @@ pub fn build(b: *std.Build) !void {
         docs_step.dependOn(&install_docs.step);
 
         if (generate_doc_images) {
-            if (b.modules.get("dvui_sdl2")) |dvui| {
+            if (b.modules.get("dvui_sdl3")) |dvui| {
                 const image_tests = b.addTest(.{
                     .name = "generate-images",
                     .root_module = dvui,
@@ -247,7 +222,7 @@ pub fn build(b: *std.Build) !void {
                 });
                 docs_step.dependOn(&b.addRunArtifact(image_tests).step);
             } else {
-                docs_step.dependOn(&b.addFail("'generate-images' requires the sdl2 backend").step);
+                docs_step.dependOn(&b.addFail("'generate-images' requires the sdl3 backend").step);
             }
         }
 
@@ -309,31 +284,6 @@ pub fn buildBackend(backend: Backend, test_dvui_and_app: bool, dvui_opts_in: Dvu
     const target = dvui_opts.target;
     const optimize = dvui_opts.optimize;
     switch (backend) {
-        .custom => {
-            dvui_opts.setDefaults(.{ .libc = false, .freetype = false, .tiny_file_dialogs = false, .stb_image = false, .tree_sitter = true });
-
-            // For export to users who are bringing their own backend.  Use in your build.zig:
-            // const dvui_mod = dvui_dep.module("dvui");
-            // @import("dvui").linkBackend(dvui_mod, your_backend_module);
-            _ = addDvuiModule("dvui", dvui_opts);
-            // does not need to be tested as only dependent would hit this path and test themselves
-        },
-        // Deprecated modules
-        .sdl => {
-            // The sdl backend name is deprecated. This is here to provide a useful error during transition
-            const files = b.addWriteFiles();
-            const source_path = files.add("sdl-deprecated.zig",
-                \\comptime { @compileError("The module 'dvui_sdl' is deprecated. Use either 'dvui_sdl2' or 'dvui_sdl3'"); }
-            );
-            _ = b.addModule("sdl", .{ .root_source_file = source_path });
-            _ = b.addModule("dvui_sdl", .{ .root_source_file = source_path });
-
-            // This indicates that we are trying to build this specific backend only
-            if (test_dvui_and_app) {
-                const deprecation_message = b.addFail("Backend 'sdl' is deprecated. Use either 'sdl2' or 'sdl3'");
-                b.getInstallStep().dependOn(&deprecation_message.step);
-            }
-        },
         .testing => {
             dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .tiny_file_dialogs = true, .stb_image = true, .tree_sitter = true });
             const testing_mod = b.addModule("testing", .{
@@ -357,91 +307,6 @@ pub fn buildBackend(backend: Backend, test_dvui_and_app: bool, dvui_opts_in: Dvu
                 .backend_mod = testing_mod,
             };
             _ = addExample("testing-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-        },
-        .sdl2 => {
-            dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .tiny_file_dialogs = true, .stb_image = true, .tree_sitter = true });
-            const sdl_mod = b.addModule("sdl2", .{
-                .root_source_file = b.path("src/backends/sdl.zig"),
-                .target = target,
-                .optimize = optimize,
-                .link_libc = true,
-            });
-            dvui_opts.addChecks(sdl_mod, "sdl2-backend");
-            dvui_opts.addTests(sdl_mod, "sdl2-backend");
-
-            const sdl2_options = b.addOptions();
-
-            if (b.systemIntegrationOption("sdl2", .{})) {
-                // SDL2 from system
-                sdl2_options.addOption(std.SemanticVersion, "version", .{ .major = 2, .minor = 0, .patch = 0 });
-                sdl_mod.linkSystemLibrary("SDL2", .{});
-            } else {
-                // SDL2 compiled from source
-                sdl2_options.addOption(std.SemanticVersion, "version", .{ .major = 2, .minor = 0, .patch = 0 });
-                if (target.result.os.tag == .linux) {
-                    const sdl_dep = b.lazyDependency("sdl", .{
-                        .target = target,
-                        .optimize = optimize,
-                        // trying to compile opengles (version 1) fails on
-                        // newer linux distros like arch, because they don't
-                        // have /usr/include/gles/gl.h
-                        // https://github.com/david-vanderson/dvui/issues/131
-                        .render_driver_ogl_es = false,
-                    });
-                    if (sdl_dep) |sd| {
-                        sdl_mod.linkLibrary(sd.artifact("SDL2"));
-                    }
-                } else {
-                    const sdl_dep = b.lazyDependency("sdl", .{ .target = target, .optimize = optimize });
-                    if (sdl_dep) |sd| {
-                        sdl_mod.linkLibrary(sd.artifact("SDL2"));
-                    }
-                }
-            }
-            sdl_mod.addOptions("sdl_options", sdl2_options);
-
-            // Enable smooth scrolling on mac
-            if (target.result.os.tag == .macos) {
-                // SDL hard codes this so we have to overwrite it
-                const objc_files = b.addWriteFiles();
-                const objc_file = objc_files.add("config.mm",
-                    // https://github.com/libsdl-org/SDL/issues/2176#issuecomment-2009687592
-                    \\#import <Foundation/Foundation.h>
-                    \\
-                    \\void MACOS_enable_scroll_momentum() {
-                    \\    [[NSUserDefaults standardUserDefaults]
-                    \\    setBool: YES forKey: @"AppleMomentumScrollSupported"];
-                    \\}
-                );
-                const lib = b.addLibrary(.{
-                    .name = "SDL2_config",
-                    .root_module = b.createModule(.{
-                        .target = target,
-                        .optimize = optimize,
-                    }),
-                });
-                lib.root_module.addCSourceFile(.{
-                    .file = objc_file,
-                    .language = .objective_c,
-                });
-                sdl_mod.linkLibrary(lib);
-            }
-
-            const dvui_sdl = addDvuiModule("dvui_sdl2", dvui_opts);
-            dvui_opts.addChecks(dvui_sdl, "dvui_sdl2");
-            if (test_dvui_and_app) {
-                dvui_opts.addTests(dvui_sdl, "dvui_sdl2");
-            }
-
-            linkBackend(dvui_sdl, sdl_mod);
-            const example_opts: ExampleOptions = .{
-                .dvui_mod = dvui_sdl,
-                .backend_name = "sdl-backend",
-                .backend_mod = sdl_mod,
-            };
-            _ = addExample("sdl2-standalone", b.path("examples/sdl-standalone.zig"), true, example_opts, dvui_opts);
-            _ = addExample("sdl2-ontop", b.path("examples/sdl-ontop.zig"), true, example_opts, dvui_opts);
-            _ = addExample("sdl2-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
         },
         .sdl3gpu => {
             dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .tiny_file_dialogs = true, .stb_image = true, .tree_sitter = true });
@@ -521,229 +386,6 @@ pub fn buildBackend(backend: Backend, test_dvui_and_app: bool, dvui_opts_in: Dvu
                 _ = addExample("sdl3-standalone", b.path("examples/sdl-standalone.zig"), true, example_opts, dvui_opts);
                 _ = addExample("sdl3-ontop", b.path("examples/sdl-ontop.zig"), true, example_opts, dvui_opts);
                 _ = addExample("sdl3-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-            }
-        },
-        .raylib => {
-            if (dvui_opts.vertex_index != .u16) {
-                std.log.err("Raylib backend requires u16 vertex index", .{});
-                return error.IncompatibleVertexIndex;
-            }
-
-            dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .tiny_file_dialogs = true, .stb_image = false, .tree_sitter = true });
-
-            const raylib_backend_mod = b.addModule("raylib", .{
-                .root_source_file = b.path("src/backends/raylib-c.zig"),
-                .target = target,
-                .optimize = optimize,
-                .link_libc = true,
-            });
-            dvui_opts.addChecks(raylib_backend_mod, "raylib-backend");
-            dvui_opts.addTests(raylib_backend_mod, "raylib-backend");
-
-            const maybe_ray = b.lazyDependency(
-                "raylib",
-                .{
-                    .target = target,
-                    .optimize = optimize,
-                    .linux_display_backend = dvui_opts.linux_display_backend.?,
-                },
-            );
-            if (maybe_ray) |ray| {
-                raylib_backend_mod.linkLibrary(ray.artifact("raylib"));
-
-                // This is to support variable framerate
-                raylib_backend_mod.addIncludePath(ray.path("src/external/glfw/include/GLFW"));
-
-                // This seems wonky to me, but is copied from raylib's src/build.zig
-                if (b.lazyDependency("raygui", .{})) |raygui_dep| {
-                    if (b.lazyImport(@This(), "raylib")) |_| {
-                        // we want to write this:
-                        //raylib_build.addRaygui(b, ray.artifact("raylib"), raygui_dep);
-                        // but that causes a second invocation of the raylib dependency but without our linux_display_backend
-                        // so it defaults to .Both which causes an error if there is no wayland-scanner
-
-                        const raylib = ray.artifact("raylib");
-                        var gen_step = b.addWriteFiles();
-                        raylib.step.dependOn(&gen_step.step);
-
-                        const raygui_c_path = gen_step.add("raygui.c", "#define RAYGUI_IMPLEMENTATION\n#include \"raygui.h\"\n");
-                        raylib.root_module.addCSourceFile(.{ .file = raygui_c_path });
-                        raylib.root_module.addIncludePath(raygui_dep.path("src"));
-                        raylib.root_module.addIncludePath(ray.path("src"));
-
-                        raylib.installHeader(raygui_dep.path("src/raygui.h"), "raygui.h");
-                    }
-                }
-            }
-
-            const dvui_raylib = addDvuiModule("dvui_raylib", dvui_opts);
-            dvui_opts.addChecks(dvui_raylib, "dvui_raylib");
-            if (test_dvui_and_app) {
-                dvui_opts.addTests(dvui_raylib, "dvui_raylib");
-            }
-
-            linkBackend(dvui_raylib, raylib_backend_mod);
-            const example_opts: ExampleOptions = .{
-                .dvui_mod = dvui_raylib,
-                .backend_name = "raylib-backend",
-                .backend_mod = raylib_backend_mod,
-            };
-
-            _ = addExample("raylib-standalone", b.path("examples/raylib-standalone.zig"), true, example_opts, dvui_opts);
-            _ = addExample("raylib-ontop", b.path("examples/raylib-ontop.zig"), true, example_opts, dvui_opts);
-            _ = addExample("raylib-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-        },
-        .raylib_zig => {
-            if (dvui_opts.vertex_index != .u16) {
-                std.log.err("Raylib-zig backend requires u16 vertex index", .{});
-                return error.IncompatibleVertexIndex;
-            }
-
-            dvui_opts.setDefaults(.{ .libc = dvui_opts_in.libc orelse true, .freetype = true, .tiny_file_dialogs = true, .stb_image = false, .tree_sitter = true });
-
-            const raylib_backend_mod = b.addModule("raylib_zig", .{
-                .root_source_file = b.path("src/backends/raylib-zig.zig"),
-                .target = target,
-                .optimize = optimize,
-                .link_libc = true,
-            });
-            dvui_opts.addChecks(raylib_backend_mod, "raylib-zig-backend");
-            dvui_opts.addTests(raylib_backend_mod, "raylib-zig-backend");
-
-            const maybe_ray = b.lazyDependency(
-                "raylib_zig",
-                .{
-                    .target = target,
-                    .optimize = optimize,
-                    .linux_display_backend = dvui_opts.linux_display_backend.?,
-                },
-            );
-            if (maybe_ray) |ray| {
-                raylib_backend_mod.linkLibrary(ray.artifact("raylib"));
-                raylib_backend_mod.addImport("raylib", ray.module("raylib"));
-                raylib_backend_mod.addImport("raygui", ray.module("raygui"));
-            }
-
-            const maybe_glfw = b.lazyDependency(
-                "zglfw",
-                .{
-                    .target = target,
-                    .optimize = optimize,
-                },
-            );
-            if (maybe_glfw) |glfw| {
-                raylib_backend_mod.addImport("zglfw", glfw.module("root"));
-            }
-
-            const dvui_raylib = addDvuiModule("dvui_raylib_zig", dvui_opts);
-            dvui_opts.addChecks(dvui_raylib, "dvui_raylib_zig");
-            if (test_dvui_and_app) {
-                dvui_opts.addTests(dvui_raylib, "dvui_raylib_zig");
-            }
-
-            linkBackend(dvui_raylib, raylib_backend_mod);
-            const example_opts: ExampleOptions = .{
-                .dvui_mod = dvui_raylib,
-                .backend_name = "raylib-zig-backend",
-                .backend_mod = raylib_backend_mod,
-            };
-
-            _ = addExample("raylib-zig-standalone", b.path("examples/raylib-zig-standalone.zig"), true, example_opts, dvui_opts);
-            _ = addExample("raylib-zig-ontop", b.path("examples/raylib-zig-ontop.zig"), true, example_opts, dvui_opts);
-            _ = addExample("raylib-zig-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-        },
-        .dx11 => {
-            if (dvui_opts.vertex_index != .u16) {
-                std.log.err("dx11 backend currently requires u16 vertex index", .{});
-                return error.IncompatibleVertexIndex;
-            }
-
-            dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .tiny_file_dialogs = true, .stb_image = true, .tree_sitter = true });
-            if (target.result.os.tag == .windows) {
-                const dx11_mod = b.addModule("dx11", .{
-                    .root_source_file = b.path("src/backends/dx11.zig"),
-                    .target = target,
-                    .optimize = optimize,
-                    .link_libc = true,
-                });
-                dvui_opts.addChecks(dx11_mod, "dx11-backend");
-                dvui_opts.addTests(dx11_mod, "dx11-backend");
-
-                if (b.lazyDependency("win32", .{})) |zigwin32| {
-                    dx11_mod.addImport("win32", zigwin32.module("win32"));
-                }
-
-                const dvui_dx11 = addDvuiModule("dvui_dx11", dvui_opts);
-                dvui_opts.addChecks(dvui_dx11, "dvui_dx11");
-                if (test_dvui_and_app) {
-                    dvui_opts.addTests(dvui_dx11, "dvui_dx11");
-                }
-
-                linkBackend(dvui_dx11, dx11_mod);
-                const example_opts: ExampleOptions = .{
-                    .dvui_mod = dvui_dx11,
-                    .backend_name = "dx11-backend",
-                    .backend_mod = dx11_mod,
-                };
-                _ = addExample("dx11-standalone", b.path("examples/dx11-standalone.zig"), true, example_opts, dvui_opts);
-                _ = addExample("dx11-ontop", b.path("examples/dx11-ontop.zig"), true, example_opts, dvui_opts);
-                _ = addExample("dx11-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-            }
-        },
-        .glfw => {
-            dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .stb_image = true, .tiny_file_dialogs = true, .tree_sitter = true });
-
-            if (dvui_opts.render_backend == .default) {
-                dvui_opts.render_backend = .opengl;
-            }
-
-            const glfw_mod = b.addModule("glfw", .{
-                .root_source_file = b.path("src/backends/glfw.zig"),
-                .target = target,
-                .optimize = optimize,
-                .link_libc = true,
-            });
-
-            const maybe_glfw = b.lazyDependency(
-                "zglfw",
-                .{
-                    .target = target,
-                    .optimize = optimize,
-                },
-            );
-
-            if (maybe_glfw) |glfw| {
-                glfw_mod.addImport("zglfw", glfw.module("root"));
-                glfw_mod.linkLibrary(glfw.artifact("glfw"));
-            }
-
-            const dvui_glfw = addDvuiModule("dvui-glfw", dvui_opts);
-            linkBackend(dvui_glfw, glfw_mod);
-
-            const example_opts: ExampleOptions = .{
-                .dvui_mod = dvui_glfw,
-                .backend_name = "glfw-backend",
-                .backend_mod = glfw_mod,
-            };
-            _ = addExample("glfw-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-            const glfw_opengl_ontop = addExample("glfw-opengl-ontop", b.path("examples/glfw-opengl-ontop.zig"), test_dvui_and_app, example_opts, dvui_opts);
-
-            const maybe_zgl = b.lazyDependency("zgl", .{
-                .target = target,
-                .optimize = optimize,
-            });
-            if (maybe_zgl) |zgl| {
-                const zgl_mod = zgl.module("zgl");
-                switch (target.result.os.tag) {
-                    .windows => zgl_mod.linkSystemLibrary("opengl32", .{}),
-                    .linux => zgl_mod.linkSystemLibrary("GL", .{}),
-                    .macos => {
-                        zgl_mod.linkFramework("OpenGL", .{});
-                        zgl_mod.linkFramework("Cocoa", .{});
-                    },
-                    else => {},
-                }
-                glfw_opengl_ontop.addImport("zgl", zgl_mod);
             }
         },
         .web => {
@@ -826,49 +468,6 @@ pub fn buildBackend(backend: Backend, test_dvui_and_app: bool, dvui_opts_in: Dvu
                 addWebExample("web-app", b.path("examples/app.zig"), example_opts, wasm_dvui_opts);
             }
         },
-        .wio => {
-            dvui_opts.setDefaults(.{ .libc = true, .freetype = true, .tiny_file_dialogs = true, .stb_image = true, .tree_sitter = true });
-
-            // workaround for https://github.com/ziglang/zig/issues/24140
-            dvui_opts.use_llvm = true;
-
-            if (dvui_opts.render_backend == .default) {
-                dvui_opts.render_backend = .opengl;
-            }
-
-            const wio_backend_mod = b.addModule("wio", .{
-                .root_source_file = b.path("src/backends/wio.zig"),
-                .target = target,
-                .optimize = optimize,
-            });
-            dvui_opts.addChecks(wio_backend_mod, "wio-backend");
-            dvui_opts.addTests(wio_backend_mod, "wio-backend");
-
-            if (b.lazyDependency("wio", .{
-                .target = target,
-                .optimize = optimize,
-                .enable_opengl = (dvui_opts.render_backend == .opengl),
-                .unix_backends = dvui_opts.wio_unix_backends,
-                .win32_manifest = false,
-            })) |wio| {
-                wio_backend_mod.addImport("wio", wio.module("wio"));
-            }
-
-            const dvui_wio = addDvuiModule("dvui_wio", dvui_opts);
-            dvui_opts.addChecks(dvui_wio, "dvui_wio");
-            if (test_dvui_and_app) {
-                dvui_opts.addTests(dvui_wio, "dvui_wio");
-            }
-
-            linkBackend(dvui_wio, wio_backend_mod);
-
-            const example_opts: ExampleOptions = .{
-                .dvui_mod = dvui_wio,
-                .backend_name = "wio-backend",
-                .backend_mod = wio_backend_mod,
-            };
-            _ = addExample("wio-app", b.path("examples/app.zig"), test_dvui_and_app, example_opts, dvui_opts);
-        },
     }
 }
 
@@ -893,11 +492,9 @@ const DvuiModuleOptions = struct {
     libc: ?bool,
     tiny_file_dialogs: ?bool,
     freetype: ?bool,
-    linux_display_backend: ?LinuxDisplayBackend = null,
     stb_image: ?bool,
     tree_sitter: ?bool,
     tvg: bool,
-    wio_unix_backends: ?[]const u8 = null,
     sdl3_system_include_path: ?std.Build.LazyPath = null,
     sdl3_system_framework_path: ?std.Build.LazyPath = null,
     sdl3_library_path: ?std.Build.LazyPath = null,

@@ -13,18 +13,12 @@
         "package.json",
         "readme-accessibility.md",
         "readme-implementation.md",
-        "readme-raylib-zig-custom.md",
         "src",
         "tools",
         "tsconfig.json",
         "vendor",
     },
     .dependencies = .{
-        .sdl = .{
-            .url = "git+https://github.com/david-vanderson/SDL#b25735a465f7db1c160d2eca8ac46dde9ec41cfb",
-            .hash = "SDL-2.32.10-JToi37G3EgG0eraPos4vhCwC6vVgyB1FYf1SxxhpBr_Y",
-            .lazy = true,
-        },
         .sdl3 = .{
             .url = "git+https://github.com/david-vanderson/SDL#5bbcf665494fe14acadf50601edf6d5f74ebf96a",
             .hash = "sdl-0.4.2+3.4.4-SDL--tB1pQFLgwvCakiiOSoZIuVaz6a6-_gOZC66AGRD",
@@ -33,33 +27,6 @@
         .freetype = .{
             .url = "git+https://github.com/david-vanderson/freetype#cd981cdea11ddd82b89975bb673f25ac069ffc09",
             .hash = "freetype-2.14.1-alzUkTyBqgBwke4Jsot997WYSpl207Ij9oO-2QOvGrOi",
-            .lazy = true,
-        },
-        .raylib = .{
-            .url = "git+https://github.com/raysan5/raylib?ref=master#e9caf5a9811a9c1a126398795915b13ef488618e",
-            .hash = "raylib-6.0.0-whq8uOmvLgUktXC94fZkRLK2dQA75X2pMwZYj2X3EZl8",
-            .lazy = true,
-        },
-        .wio = .{
-            .url = "git+https://github.com/ypsvlq/wio?master#92a7a2eb0cc7a82b62bd3ca699c79ff50a9a5873",
-            .hash = "wio-0.0.0-8xHrrx8eBwBliteTXuvS4JKUbdquuaJabO7wMk5FZalf",
-            .lazy = true,
-        },
-        .opengl = .{
-            .url = "git+https://github.com/ypsvlq/opengl?master#2cd1835dc6e9b31518597cff25ce95fd07f2e0c7",
-            .hash = "opengl-0.0.0-_Vp8-EjsKgDhnkUWeb8Nmr2oEdvsCsDq9bUgmcNi0SuQ",
-            .lazy = true,
-        },
-        //used in the raylib-ontop example
-        .raygui = .{
-            .url = "https://github.com/raysan5/raygui/archive/33f1659.tar.gz",
-            .hash = "N-V-__8AAAHFTwBfBg00dnFXcYkNbjC8BSyi1CDcrnh12ypL",
-            .lazy = true,
-        },
-        // required for the directx11 backend
-        .win32 = .{
-            .url = "git+https://github.com/kristoff-it/zigwin32.git?ref=fix/zig16#1102e9b82e8bd50913b6a78035bfb399ebd8cf97",
-            .hash = "zigwin32-25.0.28-preview-6BfVhYKN5AOvXPVJq4bGZ7C5dM3PbUra4xhKAKOFJGcF",
             .lazy = true,
         },
         // for rendering tvg icons
@@ -71,18 +38,6 @@
         .accesskit = .{
             .url = "https://github.com/AccessKit/accesskit-c/releases/download/0.20.0/accesskit-c-0.20.0.zip",
             .hash = "N-V-__8AAPwQuguI8Jsun6Omu2HHb9EADaaP8Yn2TxYplJtC",
-            .lazy = true,
-        },
-
-        // Experimental zig bindings, any zig based backend will be located here
-        .raylib_zig = .{
-            .url = "git+https://github.com/raylib-zig/raylib-zig?ref=devel#4b6a05cd102d51f00523dd5c5e18e628df359d20",
-            .hash = "raylib_zig-5.6.0-dev-KE8REKNmBQDek2Sz27ULioxYpY9IYR0K0CeIC-iJRLCI",
-            .lazy = true,
-        },
-        .zglfw = .{
-            .url = "git+https://github.com/zig-gamedev/zglfw.git#d9c06187e8b23e91b2ba6865d265e4213e5e7d09",
-            .hash = "zglfw-0.10.0-dev-zgVDNC64IQCeL-_eVOA27Wa50WVitrJswOZVvgcXmIsy",
             .lazy = true,
         },
         .tree_sitter = .{
@@ -98,11 +53,6 @@
         .tree_sitter_zig = .{
             .url = "git+https://github.com/david-vanderson/tree-sitter-zig.git#f247e4f0017a79c86646089078b68591620d5709",
             .hash = "tree_sitter_zig-1.1.2-YNf2GAt8XACdbaWHHiNMMfw--bLN1Av1rMsnq6bokMdL",
-            .lazy = true,
-        },
-        .zgl = .{
-            .url = "git+https://github.com/ziglibs/zgl#6ee54c287f3c4f176bd05a92746828bb791a1ad0",
-            .hash = "zgl-1.1.0-p_NpAJNECgCzUGx0aF5KFsmD5VOwfw8LaOsN0fcoU2bi",
             .lazy = true,
         },
     },

@@ -23,10 +23,9 @@ pub const c = blk: {
     });
 };
 
-/// Only available in sdl2
 extern "SDL_config" fn MACOS_enable_scroll_momentum() callconv(.c) void;
 
-pub const kind: dvui.enums.Backend = if (sdl3) .sdl3 else .sdl2;
+pub const kind: dvui.enums.Backend = .sdl3;
 
 pub const SDLBackend = @This();
 pub const Context = *SDLBackend;

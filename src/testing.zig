@@ -87,7 +87,7 @@ pub fn init(options: InitOptions) !Self {
     const backend = try options.allocator.create(Backend);
     errdefer options.allocator.destroy(backend);
     backend.* = switch (Backend.kind) {
-        .sdl2, .sdl3 => try Backend.initWindow(.{
+        .sdl3 => try Backend.initWindow(.{
             .io = options.io,
             .allocator = options.allocator,
             .size = options.window_size,

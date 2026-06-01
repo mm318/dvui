@@ -66,54 +66,6 @@ Tested with Zig v0.16.0 (for Zig v0.15.2, use DVUI [tag v0.4.0](https://github.c
       <td><code>sdl3gpu-ontop</code></td>
     </tr>
     <tr>
-      <td><strong>SDL2</strong></td>
-      <td><code>sdl2-app</code></td>
-      <td><code>sdl2-standalone</code></td>
-      <td><code>sdl2-ontop</code></td>
-    </tr>
-    <tr>
-      <td>
-        <strong>Raylib</strong>
-        <br>
-        <sub>C API</sub>
-      </td>
-      <td><code>raylib-app</code></td>
-      <td><code>raylib-standalone</code></td>
-      <td><code>raylib-ontop</code></td>
-    </tr>
-    <tr>
-      <td>
-        <strong>Raylib</strong>
-        <br>
-        <sub>Bindings <a href="https://github.com/raylib-zig/raylib-zig"><code>raylib-zig</code></a></sub>
-      </td>
-      <td><code>raylib-zig-app</code></td>
-      <td><code>raylib-zig-standalone</code></td>
-      <td><code>raylib-zig-ontop</code></td>
-    </tr>
-    <tr>
-      <td><strong>DX11</strong></td>
-      <td><code>dx11-app</code></td>
-      <td><code>dx11-standalone</code></td>
-      <td><code>dx11-ontop</code></td>
-    </tr>
-    <tr>
-      <td><strong>GLFW</strong></td>
-      <td><code>glfw-opengl-app</code></td>
-      <td>todo</td>
-      <td><code>glfw-opengl-ontop</code></td>
-    </tr>
-    <tr>
-      <td>
-        <strong>wio</strong>
-        <br>
-        <sub>OpenGL on <a href="https://github.com/ypsvlq/wio"><code>wio</code></a></sub>
-      </td>
-      <td><code>wio-app</code></td>
-      <td>todo</td>
-      <td>todo</td>
-    </tr>
-    <tr>
       <td><strong>Web</strong></td>
       <td><code>web-app</code></td>
       <td>none</td>
@@ -129,9 +81,6 @@ Tested with Zig v0.16.0 (for Zig v0.15.2, use DVUI [tag v0.4.0](https://github.c
 - `zig build docs -Dgenerate-images`
 - Load `./zig-out/docs/index.html`
 - [Online Docs](https://david-vanderson.github.io/docs/)
-
-### Troubleshooting Raylib
-- If you encounter error `No Wayland`, then also add flag `-Dlinux_display_backend=X11`
 
 ### Troubleshooting Web
 - To load examples for this backend, they must first be served through a (local) web server using:
@@ -170,12 +119,9 @@ Discuss yours on:
   - debugging on top of existing application
   - see [Ontop-Floating-Windows](#Ontop-Floating-Windows)
 - Backends
-  - [SDL2 and SDL3](https://libsdl.org/)
+  - [SDL3](https://libsdl.org/)
+  - SDL3 GPU
   - [Web](https://david-vanderson.github.io/demo)
-  - [Raylib (C)](https://www.raylib.com/)
-  - [Raylib (Zig)](https://github.com/raylib-zig/raylib-zig)
-  - [DX11](https://learn.microsoft.com/en-us/windows/win32/direct3d11/atoc-dx-graphics-direct3d-11)
-  - [OpenGL + GLFW](https://www.glfw.org/)
 - [TinyVG](https://tinyvg.tech/) icons
   - [`zig-lib-svg2tvg`](https://github.com/nat3Github/zig-lib-svg2tvg)
   - more icons at [`zig-lib-icons`](https://github.com/nat3Github/zig-lib-icons)
@@ -217,10 +163,6 @@ Alternatively:
    const dvui_dep = b.dependency("dvui", .{ .target = target, .optimize = optimize, .backend = .sdl3 });
    exe.root_module.addImport("dvui", dvui_dep.module("dvui_sdl3"));
    ```
-
-Further reading:
-- Using a version of `raylib-zig` that's not bundled with DVUI:
-  - [`readme-raylib-zig-custom.md`](readme-raylib-zig-custom.md)
 
 ## Frequently Asked Questions
 

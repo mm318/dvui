@@ -51,11 +51,7 @@ mutex: Io.Mutex = .init,
 
 fn AdapterType() type {
     if (dvui.accesskit_enabled and builtin.os.tag == .windows) {
-        if (dvui.backend.kind == .dx11) {
-            return *c.accesskit_windows_adapter;
-        } else {
-            return *c.accesskit_windows_subclassing_adapter;
-        }
+        return *c.accesskit_windows_subclassing_adapter;
     } else if (dvui.accesskit_enabled and builtin.os.tag.isDarwin()) {
         return *c.accesskit_macos_subclassing_adapter;
     } else if (dvui.accesskit_enabled and builtin.os.tag == .linux) {
@@ -69,25 +65,13 @@ pub fn initialize(self: *AccessKit) void {
     const window: *dvui.Window = @alignCast(@fieldParentPtr("accesskit", self));
 
     if (builtin.os.tag == .windows) {
-        if (dvui.backend.kind == .dx11) {
-            self.adapter = c.accesskit_windows_adapter_new(
-                windowsHWND(window),
-                // If the window currently has focus.
-                // TODO: We currently assume we always have focus as this initialization is performed
-                //       at program startup so we are most likely focused. This should be verified in some way
-                true,
-                doAction,
-                self,
-            ) orelse @panic("null");
-        } else {
-            self.adapter = c.accesskit_windows_subclassing_adapter_new(
-                windowsHWND(window),
-                initialTreeUpdate,
-                self,
-                doAction,
-                self,
-            ) orelse @panic("null");
-        }
+        self.adapter = c.accesskit_windows_subclassing_adapter_new(
+            windowsHWND(window),
+            initialTreeUpdate,
+            self,
+            doAction,
+            self,
+        ) orelse @panic("null");
     } else if (builtin.os.tag.isDarwin()) {
         // TODO: This results in a null pointer unwrap. I assume the window class is wrong?
         //ak.accesskit_macos_add_focus_forwarder_to_window_class("SDLWindow");
@@ -113,22 +97,6 @@ fn windowsHWND(window: *dvui.Window) c.HWND {
             ) orelse @panic("No HWND");
             return @intFromPtr(hwnd);
         },
-        .sdl2 => {
-            const SDLBackend = dvui.backend;
-            var wmInfo: SDLBackend.c.SDL_SysWMinfo = undefined;
-            SDLBackend.c.SDL_GetVersion(&wmInfo.version);
-            _ = SDLBackend.c.SDL_GetWindowWMInfo(window.backend.impl.window, &wmInfo);
-            return @ptrCast(wmInfo.info.win.window);
-        },
-        .raylib => {
-            return @intFromPtr(dvui.backend.c.GetWindowHandle());
-        },
-        .raylib_zig => {
-            return @intFromPtr(dvui.backend.raylib.getWindowHandle());
-        },
-        .dx11 => {
-            return @intFromPtr(window.backend.impl.hwndFromContext());
-        },
         else => {
             @compileError("Accesskit is not supported for this backend");
         },
@@ -139,13 +107,7 @@ fn macOSWinPtr(window: *dvui.Window) *anyopaque {
     const SDLBackend = dvui.backend;
 
     switch (dvui.backend.kind) {
-        .sdl2 => {
-            var wmInfo: SDLBackend.c.SDL_SysWMinfo = undefined;
-            SDLBackend.c.SDL_GetVersion(&wmInfo.version);
-            _ = SDLBackend.c.SDL_GetWindowWMInfo(window.backend.impl.window, &wmInfo);
-            return wmInfo.info.cocoa.window orelse @panic("No HWND");
-        },
-        .sdl3 => {
+        .sdl3, .sdl3gpu => {
             const properties: SDLBackend.c.SDL_PropertiesID = SDLBackend.c.SDL_GetWindowProperties(window.backend.impl.window);
             const hwnd = SDLBackend.c.SDL_GetPointerProperty(
                 properties,
@@ -153,9 +115,6 @@ fn macOSWinPtr(window: *dvui.Window) *anyopaque {
                 null,
             ) orelse @panic("No HWND");
             return hwnd;
-        },
-        .raylib => {
-            return dvui.backend.c.GetWindowHandle() orelse @panic("No HWND");
         },
         else => @compileError("Accesskit is not supported for this OS/backend"),
     }
@@ -597,16 +556,9 @@ pub fn pushUpdates(self: *AccessKit) void {
     self.processActions();
 
     if (builtin.os.tag == .windows) {
-        if (dvui.backend.kind == .dx11) {
-            const queued_events = c.accesskit_windows_adapter_update_if_active(self.adapter.?, frameTreeUpdate, self);
-            if (queued_events) |events| {
-                c.accesskit_windows_queued_events_raise(events);
-            }
-        } else {
-            const queued_events = c.accesskit_windows_subclassing_adapter_update_if_active(self.adapter.?, frameTreeUpdate, self);
-            if (queued_events) |events| {
-                c.accesskit_windows_queued_events_raise(events);
-            }
+        const queued_events = c.accesskit_windows_subclassing_adapter_update_if_active(self.adapter.?, frameTreeUpdate, self);
+        if (queued_events) |events| {
+            c.accesskit_windows_queued_events_raise(events);
         }
     } else if (builtin.os.tag.isDarwin()) {
         const queued_events = c.accesskit_macos_subclassing_adapter_update_if_active(self.adapter.?, frameTreeUpdate, self);
@@ -653,11 +605,7 @@ pub fn deinit(self: *AccessKit) void {
     self.text_runs.clearAndFree(window.gpa);
 
     if (builtin.os.tag == .windows)
-        if (dvui.backend.kind == .dx11) {
-            c.accesskit_windows_adapter_free(self.adapter.?);
-        } else {
-            c.accesskit_windows_subclassing_adapter_free(self.adapter.?);
-        }
+        c.accesskit_windows_subclassing_adapter_free(self.adapter.?)
     else if (builtin.os.tag.isDarwin())
         c.accesskit_macos_subclassing_adapter_free(self.adapter.?)
     else if (builtin.os.tag == .linux)
